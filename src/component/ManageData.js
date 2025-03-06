@@ -1,51 +1,65 @@
-import React, { useState, useEffect } from "react";
-import {
-  Edit2,
-  Trash2,
-  AlertTriangle,
-  Loader2,
-  X,
-  ArrowLeft,
-  Sparkles,
-} from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import ReactQuill from "react-quill";
-import axios from "axios";
-import { toast } from "react-hot-toast";
-import {
-  showErrorToast,
-  showLoadingToast,
-  showSuccessToast,
-  ToastContainer,
-} from "./toastmessage";
-import "react-quill/dist/quill.snow.css";
-import { Link } from "react-router-dom";
-
-const Modal = ({ isOpen, onClose, children }) => {
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex min-h-screen items-center justify-center p-4 text-center">
-        <div
-          className="fixed inset-0 bg-black/80 transition-opacity backdrop-blur-sm"
-          onClick={onClose}
-        />
-        <div className="relative w-full max-w-4xl transform overflow-hidden rounded-xl bg-slate-900 p-6 text-left shadow-xl transition-all border border-slate-700">
-          {children}
-        </div>
-      </div>
-    </div>
-  );
-};
+import { useState, useEffect } from "react"
+import { motion } from "framer-motion"
+import { toast } from "react-hot-toast"
+import { Pencil, Trash2, ArrowLeft, Loader2, Save, X, AlertTriangle, TableIcon } from "lucide-react"
+import axios from "axios"
+import ReactQuill from "react-quill"
+import "react-quill/dist/quill.snow.css"
+import { Link } from "react-router-dom"
+import { showErrorToast, showLoadingToast, showSuccessToast, ToastContainer } from "./toastmessage"
 
 const ManageData = () => {
-  const initialFormData = {
+  const [data, setData] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [selectedItem, setSelectedItem] = useState(null)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  // Initialize with the same structure as AddData component
+  const initialEditFormData = {
     title: "",
     description: "",
-    news: [{ title: "", description: "", pubDate: "" }],
-    corporate_action: [{ title: "", description: "", type: "Dividend" }],
-    earning_report: [{ title: "", description: "", type: "Result" }],
+    fiidii_activity: [
+      {
+        currentDate: "",
+        fiiNet: "",
+        diiNet: "",
+      },
+    ],
+    market_bulletin: "",
+    nifty_tech_analysis: [
+      {
+        description: "",
+        resistance_pivots: [""],
+        support_pivots: [""],
+      },
+    ],
+    bank_nifty_tech_analysis: [
+      {
+        description: "",
+        resistance_pivots: [""],
+        support_pivots: [""],
+      },
+    ],
+    bullish_outlook: "",
+    bearish_outlook: "",
+    corporate_action: [
+      {
+        company_name: "",
+        description: "",
+        tag: "",
+        price_range: "",
+      },
+    ],
+    earning_report: [
+      {
+        company_name: "",
+        description: "",
+        price_range: "",
+      },
+    ],
     upcoming_ipos: [
       {
         dates: "",
@@ -55,18 +69,9 @@ const ManageData = () => {
         subscription: "",
       },
     ],
-    todays_learning: "",
-    risk_management: "",
-    trading_strategy: "",
-  };
+  }
 
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [tableLoading, setTableLoading] = useState(true);
-  const [data, setData] = useState([]);
-  const [editFormData, setEditFormData] = useState(initialFormData);
+  const [editFormData, setEditFormData] = useState(initialEditFormData)
 
   const modules = {
     toolbar: [
@@ -75,10 +80,10 @@ const ManageData = () => {
       [{ color: [] }, { background: [] }],
       [{ list: "ordered" }, { list: "bullet" }],
       [{ align: [] }],
-      ["link"],
+      ["link", "image"],
       ["clean"],
     ],
-  };
+  }
 
   const formats = [
     "header",
@@ -92,176 +97,250 @@ const ManageData = () => {
     "bullet",
     "align",
     "link",
-  ];
+    "image",
+  ]
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    fetchData()
+  }, [])
 
   const fetchData = async () => {
-    setTableLoading(true);
     try {
-      const response = await axios.get(
-        "https://stage.api.tradexpert.ai/api/v1/user/whatsnew"
-      );
-      console.log(response.data.whatsnew, "response");
-      setData(response.data.whatsnew);
+      const response = await axios.get("https://stage.api.tradexpert.ai/api/v1/user/whatsnew")
+      if (response.data.whatsnew && response.data.whatsnew) {
+        setData(Array.isArray(response.data.whatsnew) ? response.data.whatsnew: [])
+      } else {
+        setData([])
+        console.error("API response format is unexpected:", response.data.whatsnew)
+      }
     } catch (error) {
-      toast.error("Failed to fetch data");
-      console.error("Error fetching data:", error);
+      console.error("Error fetching data:", error)
+      showErrorToast("Failed to load data")
+      setData([]) 
     } finally {
-      setTableLoading(false);
+      setLoading(false)
     }
-  };
-
-  const formatDateForInput = (dateString) => {
-    if (!dateString) return "";
-
-    try {
-      const match = dateString.match(/^(\d{2})-(\d{2})-(\d{4})$/);
-      if (match) {
-        const [, day, month, year] = match;
-        return `${year}-${month}-${day}`;
-      }
-
-      if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
-        return dateString;
-      }
-    } catch (error) {
-      console.error("Error formatting date:", error);
-    }
-
-    return "";
-  };
+  }
 
   const handleEdit = (item) => {
-    const formattedItem = {
-      ...item,
-      news: item.news.map((newsItem) => ({
-        ...newsItem,
-        pubDate: formatDateForInput(newsItem.pubDate),
-      })),
-    };
+    setSelectedItem(item)
+    const itemCopy = JSON.parse(JSON.stringify(item))
+    const formData = {
+      ...initialEditFormData,
+      ...itemCopy,
+    }
+    ;[
+      "fiidii_activity",
+      "nifty_tech_analysis",
+      "bank_nifty_tech_analysis",
+      "corporate_action",
+      "earning_report",
+      "upcoming_ipos",
+    ].forEach((field) => {
+      if (!formData[field] || !Array.isArray(formData[field]) || formData[field].length === 0) {
+        formData[field] = initialEditFormData[field]
+      }
+    })
 
-    setSelectedItem(item);
-    setEditFormData({
-      _id: item._id,
-      ...formattedItem,
-    });
-    setIsEditModalOpen(true);
-  };
+    setEditFormData(formData)
+    setIsEditModalOpen(true)
+  }
 
   const handleDelete = (item) => {
-    setSelectedItem(item);
-    setIsDeleteModalOpen(true);
-  };
-
-  const handleEditSubmit = async () => {
-    setLoading(true);
-    const loadingToast = showLoadingToast("Updating data...");
-
-    try {
-      await axios.put(
-        `https://stage.api.tradexpert.ai/api/v1/admin/whatsnew/${selectedItem._id}`,
-        editFormData
-      );
-      toast.dismiss(loadingToast);
-      showSuccessToast("Data updated successfully");
-      await fetchData();
-      setIsEditModalOpen(false);
-    } catch (error) {
-      toast.dismiss(loadingToast);
-      showErrorToast("Failed to update data");
-      console.error("Error updating data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDeleteConfirm = async () => {
-    setLoading(true);
-    const loadingToast = showLoadingToast("Deleting data...");
-    try {
-      await axios.delete(
-        `https://stage.api.tradexpert.ai/api/v1/admin/whatsnew/${selectedItem._id}`
-      );
-      toast.dismiss(loadingToast);
-      showSuccessToast("Data deleted successfully");
-      await fetchData();
-      setIsDeleteModalOpen(false);
-    } catch (error) {
-      toast.dismiss(loadingToast);
-      showErrorToast("Failed to delete data");
-      console.error("Error deleting data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    setSelectedItem(item)
+    setIsDeleteModalOpen(true)
+  }
 
   const handleChange = (e, arrayName, index, field) => {
     if (arrayName) {
-      const updatedArray = [...editFormData[arrayName]];
-      if (field === "pubDate") {
-        const inputDate = e.target.value;
-        if (inputDate) {
-          const [year, month, day] = inputDate.split("-");
-          updatedArray[index][field] = `${day}-${month}-${year}`;
-        } else {
-          updatedArray[index][field] = "";
-        }
+      const updatedArray = [...editFormData[arrayName]]
+      if (field.includes("[")) {
+        const [baseField, indexStr] = field.split("[")
+        const pivotIndex = Number.parseInt(indexStr.replace("]", ""))
+        updatedArray[index][baseField][pivotIndex] = e.target.value
       } else {
-        updatedArray[index][field] = e.target.value;
+        updatedArray[index][field] = e.target.value
       }
+
       setEditFormData((prev) => ({
         ...prev,
         [arrayName]: updatedArray,
-      }));
+      }))
     } else {
-      const { name, value } = e.target;
+      const { name, value } = e.target
       setEditFormData((prev) => ({
         ...prev,
         [name]: value,
-      }));
+      }))
     }
-  };
-
-  const getInputDateValue = (pubDate) => {
-    if (!pubDate) return "";
-    // Convert DD-MM-YYYY to YYYY-MM-DD for input
-    const [day, month, year] = pubDate.split("-");
-    return `${year}-${month}-${day}`;
-  };
+  }
 
   const handleEditorChange = (content, field) => {
-    setEditFormData((prev) => ({
-      ...prev,
-      [field]: content,
-    }));
-  };
+    setEditFormData((prevData) => {
+      const matches = field.match(/(\w+)\[(\d+)\]\.(\w+)/)
+
+      if (matches) {
+        const [, arrayName, indexStr, subField] = matches
+        const index = Number.parseInt(indexStr)
+        const updatedArray = [...prevData[arrayName]]
+        updatedArray[index] = {
+          ...updatedArray[index],
+          [subField]: content,
+        }
+
+        return {
+          ...prevData,
+          [arrayName]: updatedArray,
+        }
+      }
+      return {
+        ...prevData,
+        [field]: content,
+      }
+    })
+  }
 
   const addArrayItem = (arrayName, template) => {
     setEditFormData((prev) => ({
       ...prev,
       [arrayName]: [...prev[arrayName], { ...template }],
-    }));
-  };
+    }))
+  }
 
   const removeArrayItem = (arrayName, index) => {
     setEditFormData((prev) => ({
       ...prev,
       [arrayName]: prev[arrayName].filter((_, i) => i !== index),
-    }));
-  };
+    }))
+  }
 
-  if (tableLoading) {
-    return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="flex items-center gap-2 text-white">
-          <Loader2 className="w-6 h-6 animate-spin" />
-          <span>Loading Data...</span>
-        </div>
-      </div>
-    );
+  const addPivotItem = (arrayName, analysisIndex, field) => {
+    const updatedAnalysis = [...editFormData[arrayName]]
+    updatedAnalysis[analysisIndex][field].push("")
+    setEditFormData((prev) => ({
+      ...prev,
+      [arrayName]: updatedAnalysis,
+    }))
+  }
+
+  const removePivotItem = (arrayName, analysisIndex, field, pivotIndex) => {
+    const updatedAnalysis = [...editFormData[arrayName]]
+    updatedAnalysis[analysisIndex][field] = updatedAnalysis[analysisIndex][field].filter((_, i) => i !== pivotIndex)
+    setEditFormData((prev) => ({
+      ...prev,
+      [arrayName]: updatedAnalysis,
+    }))
+  }
+
+  const formatDate = (date) => {
+    if (!date) return ""
+
+    if (/^\d{2}-\d{2}-\d{4}$/.test(date)) {
+      return date
+    }
+
+    try {
+      const d = new Date(date)
+      if (isNaN(d.getTime())) {
+        console.error("Invalid date input:", date)
+        return ""
+      }
+
+      const day = String(d.getDate()).padStart(2, "0")
+      const month = String(d.getMonth() + 1).padStart(2, "0")
+      const year = d.getFullYear()
+      return `${day}-${month}-${year}`
+    } catch (error) {
+      console.error("Error formatting date:", error)
+      return ""
+    }
+  }
+
+  const handleUpdate = async (e) => {
+    e.preventDefault()
+    setIsSaving(true)
+    const loadingToast = showLoadingToast("Updating data...")
+
+    try {
+      const dataToSubmit = JSON.parse(JSON.stringify(editFormData))
+
+      // Format dates for fiidii_activity
+      if (dataToSubmit.fiidii_activity) {
+        dataToSubmit.fiidii_activity = dataToSubmit.fiidii_activity
+          .map((activity) => {
+            return {
+              ...activity,
+              currentDate: activity.currentDate ? formatDate(activity.currentDate) : "",
+            }
+          })
+          .filter((activity) => activity.currentDate)
+      }
+
+      // Format dates for upcoming_ipos
+      if (dataToSubmit.upcoming_ipos) {
+        dataToSubmit.upcoming_ipos = dataToSubmit.upcoming_ipos
+          .map((ipo) => {
+            return {
+              ...ipo,
+              dates: ipo.dates ? formatDate(ipo.dates) : "",
+            }
+          })
+          .filter((ipo) => ipo.dates)
+      }
+
+      await axios.put(`https://stage.api.tradexpert.ai/api/v1/admin/whatsnew/${selectedItem._id}`, dataToSubmit)
+
+      toast.dismiss(loadingToast)
+      showSuccessToast("Data updated successfully!")
+      setIsEditModalOpen(false)
+      fetchData() // Refresh data
+    } catch (error) {
+      toast.dismiss(loadingToast)
+      console.error("Error updating data:", error)
+      showErrorToast(error.response?.data?.message || error.message || "Error updating data")
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleConfirmDelete = async () => {
+    setIsDeleting(true)
+    const loadingToast = showLoadingToast("Deleting data...")
+
+    try {
+      await axios.delete(`https://stage.api.tradexpert.ai/api/v1/admin/whatsnew/${selectedItem._id}`)
+
+      toast.dismiss(loadingToast)
+      showSuccessToast("Data deleted successfully!")
+      setIsDeleteModalOpen(false)
+      fetchData() // Refresh data
+    } catch (error) {
+      toast.dismiss(loadingToast)
+      console.error("Error deleting data:", error)
+      showErrorToast(error.response?.data?.message || error.message || "Error deleting data")
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  const containerVariants = {
+    hidden: { opacity: 0, y: 50 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.6,
+        staggerChildren: 0.1,
+      },
+    },
+  }
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+    },
   }
 
   return (
@@ -276,7 +355,7 @@ const ManageData = () => {
       >
         <Link
           to="/"
-          className="group flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white 
+          className="group flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white
                     px-4 py-2 rounded-xl border border-slate-700 transition-all duration-300"
         >
           <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
@@ -284,180 +363,354 @@ const ManageData = () => {
         </Link>
       </motion.div>
 
-      <div className="max-w-7xl mx-auto px-4 py-16">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white flex items-center justify-center gap-4">
-            <Sparkles className="w-8 h-8 text-teal-500" />
-            Manage What's New
-            <Sparkles className="w-8 h-8 text-teal-500" />
-          </h1>
-        </div>
+      <div className="max-w-6xl mx-auto px-4 py-16">
+        <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-8">
+          {/* Header */}
+          <motion.div className="text-center space-y-4" variants={itemVariants}>
+            <h1 className="text-4xl font-bold text-white flex items-center justify-center gap-4">
+              <TableIcon className="w-8 h-8 text-teal-500" />
+              Manage Data
+              <TableIcon className="w-8 h-8 text-teal-500" />
+            </h1>
+          </motion.div>
 
-        <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-slate-700">
-                <th className="py-4 px-6 text-left text-slate-300">Title</th>
-                <th className="py-4 px-6 text-right text-slate-300">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <AnimatePresence>
-                {Array.isArray(data) &&
-                  data.map((item) => (
-                    <motion.tr
-                      key={item._id}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      className="border-b border-slate-700 hover:bg-slate-700/50"
-                    >
-                      <td className="py-4 px-6 text-white">{item.title}</td>
-                      <td className="py-4 px-6">
-                        <div className="flex justify-end gap-2">
-                          <button
-                            onClick={() => handleEdit(item)}
-                            className="p-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-teal-500"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(item)}
-                            className="p-2 rounded-lg bg-slate-700 hover:bg-red-900/50 text-red-400"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </motion.tr>
-                  ))}
-              </AnimatePresence>
-            </tbody>
-          </table>
-        </div>
+          {/* Data Table */}
+          <motion.div variants={itemVariants} className="bg-slate-800 rounded-xl p-6 border border-slate-700">
+            <h2 className="text-xl font-semibold text-white mb-6">What's New Data</h2>
 
-        {/* Edit Modal */}
-        <Modal
-          isOpen={isEditModalOpen}
-          onClose={() => setIsEditModalOpen(false)}
-        >
-          <div className="max-h-[80vh] overflow-y-auto">
-            <div className="mb-6 flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-white">
-                Edit What's New
-              </h3>
+            {loading ? (
+              <div className="flex justify-center items-center py-12">
+                <Loader2 className="w-8 h-8 text-teal-500 animate-spin" />
+                <span className="ml-3 text-white">Loading data...</span>
+              </div>
+            ) : data.length === 0 ? (
+              <div className="text-center py-12 text-slate-400">
+                <p>No data available</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-700">
+                      <th className="px-4 py-3 text-left text-sm font-medium text-slate-300">Title</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-slate-300 hidden md:table-cell">
+                        Description
+                      </th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-slate-300">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.map((item) => (
+                      <tr key={item._id} className="border-b border-slate-700 hover:bg-slate-700/30 transition-colors">
+                        <td className="px-4 py-4 text-white">{item.title}</td>
+                        <td className="px-4 py-4 text-white hidden md:table-cell">
+                          <div className="max-w-xs truncate">
+                            {item.description ? (
+                              <div dangerouslySetInnerHTML={{ __html: item.description.substring(0, 100) + "..." }} />
+                            ) : (
+                              <span className="text-slate-400">No description</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-4">
+                          <div className="flex space-x-3">
+                            <button
+                              onClick={() => handleEdit(item)}
+                              className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+                              aria-label="Edit"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(item)}
+                              className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
+                              aria-label="Delete"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </motion.div>
+        </motion.div>
+      </div>
+
+      {/* Edit Modal */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="bg-slate-800 rounded-xl p-6 border border-slate-700 w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+          >
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold text-white">Edit Data</h2>
               <button
                 onClick={() => setIsEditModalOpen(false)}
-                className="text-slate-400 hover:text-white"
+                className="p-2 hover:bg-slate-700 rounded-full text-slate-400 hover:text-white transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="space-y-6">
+            <form onSubmit={handleUpdate} className="space-y-6">
               {/* Basic Information */}
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Title
-                  </label>
-                  <input
-                    type="text"
-                    name="title"
-                    value={editFormData.title}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Description
-                  </label>
-                  <ReactQuill
-                    theme="snow"
-                    value={editFormData.description}
-                    onChange={(content) =>
-                      handleEditorChange(content, "description")
-                    }
-                    modules={modules}
-                    formats={formats}
-                    className="bg-slate-800 text-white"
-                  />
+              <div className="bg-slate-900 rounded-xl p-6 border border-slate-700">
+                <h3 className="text-lg font-semibold text-white mb-4">Basic Information</h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-slate-300 block mb-2">Title</label>
+                    <input
+                      type="text"
+                      name="title"
+                      value={editFormData.title || ""}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700
+                               text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-slate-300 block mb-2">Description</label>
+                    <ReactQuill
+                      theme="snow"
+                      value={editFormData.description || ""}
+                      onChange={(content) => handleEditorChange(content, "description")}
+                      modules={modules}
+                      formats={formats}
+                      className="bg-slate-900 text-white"
+                    />
+                  </div>
                 </div>
               </div>
 
-              {/* News Section */}
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <h4 className="text-lg font-medium text-white">News</h4>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      addArrayItem("news", {
-                        title: "",
-                        description: "",
-                        pubDate: "",
-                      })
-                    }
-                    className="bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded-lg"
-                  >
-                    Add News
-                  </button>
-                </div>
-                {editFormData.news.map((item, index) => (
-                  <div
-                    key={index}
-                    className="bg-slate-900 p-4 rounded-lg space-y-4"
-                  >
-                    <input
-                      type="text"
-                      placeholder="Title"
-                      value={item.title}
-                      onChange={(e) => handleChange(e, "news", index, "title")}
-                      className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Description"
-                      value={item.description}
-                      onChange={(e) =>
-                        handleChange(e, "news", index, "description")
-                      }
-                      className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
-                    />
-                    <input
-                      type="date"
-                      name="pubDate"
-                      value={getInputDateValue(item.pubDate) || ""}
-                      onChange={(e) =>
-                        handleChange(e, "news", index, "pubDate")
-                      }
-                      className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeArrayItem("news", index)}
-                      className="text-red-400 hover:text-red-300"
-                    >
-                      Remove
-                    </button>
+              {/* Market Bulletin */}
+              <div className="bg-slate-900 rounded-xl p-6 border border-slate-700">
+                <h3 className="text-lg font-semibold text-white mb-4">Market Bulletin</h3>
+                <ReactQuill
+                  theme="snow"
+                  value={editFormData.market_bulletin || ""}
+                  onChange={(content) => handleEditorChange(content, "market_bulletin")}
+                  modules={modules}
+                  formats={formats}
+                  className="bg-slate-900 text-white"
+                />
+              </div>
+
+              {/* Nifty Tech Analysis */}
+              <div className="bg-slate-900 rounded-xl p-6 border border-slate-700">
+                <h3 className="text-lg font-semibold text-white mb-4">Nifty Tech Analysis</h3>
+                {editFormData.nifty_tech_analysis.map((item, index) => (
+                  <div key={index} className="bg-slate-800 p-4 rounded-lg mb-4">
+                    <div className="grid gap-4">
+                      <label className="text-sm font-medium text-slate-300">Description</label>
+                      <ReactQuill
+                        theme="snow"
+                        value={item.description || ""}
+                        onChange={(content) => handleEditorChange(content, `nifty_tech_analysis[${index}].description`)}
+                        modules={modules}
+                        formats={formats}
+                        className="bg-slate-900 text-white"
+                      />
+                      <div className="mt-10">
+                        <label className="text-sm font-medium text-slate-300">Resistance Pivots</label>
+                        {item.resistance_pivots &&
+                          item.resistance_pivots.map((pivot, pivotIndex) => (
+                            <div key={pivotIndex} className="flex items-center gap-2 mb-2">
+                              <input
+                                type="text"
+                                value={pivot || ""}
+                                onChange={(e) =>
+                                  handleChange(e, "nifty_tech_analysis", index, `resistance_pivots[${pivotIndex}]`)
+                                }
+                                className="flex-1 px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
+                              />
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  removePivotItem("nifty_tech_analysis", index, "resistance_pivots", pivotIndex)
+                                }
+                                className="text-red-400 hover:text-red-300"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          ))}
+                        <button
+                          type="button"
+                          onClick={() => addPivotItem("nifty_tech_analysis", index, "resistance_pivots")}
+                          className="text-teal-400 hover:text-teal-300"
+                        >
+                          Add Pivot
+                        </button>
+                      </div>
+                      <div className="mt-4">
+                        <label className="text-sm font-medium text-slate-300">Support Pivots</label>
+                        {item.support_pivots &&
+                          item.support_pivots.map((pivot, pivotIndex) => (
+                            <div key={pivotIndex} className="flex items-center gap-2 mb-2">
+                              <input
+                                type="text"
+                                value={pivot || ""}
+                                onChange={(e) =>
+                                  handleChange(e, "nifty_tech_analysis", index, `support_pivots[${pivotIndex}]`)
+                                }
+                                className="flex-1 px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
+                              />
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  removePivotItem("nifty_tech_analysis", index, "support_pivots", pivotIndex)
+                                }
+                                className="text-red-400 hover:text-red-300"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          ))}
+                        <button
+                          type="button"
+                          onClick={() => addPivotItem("nifty_tech_analysis", index, "support_pivots")}
+                          className="text-teal-400 hover:text-teal-300"
+                        >
+                          Add Pivot
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
 
+              {/* Bank Nifty Tech Analysis */}
+              <div className="bg-slate-900 rounded-xl p-6 border border-slate-700">
+                <h3 className="text-lg font-semibold text-white mb-4">Bank Nifty Tech Analysis</h3>
+                {editFormData.bank_nifty_tech_analysis.map((item, index) => (
+                  <div key={index} className="bg-slate-800 p-4 rounded-lg mb-4">
+                    <div className="grid gap-4">
+                      <label className="text-sm font-medium text-slate-300">Description</label>
+                      <ReactQuill
+                        theme="snow"
+                        value={item.description || ""}
+                        onChange={(content) =>
+                          handleEditorChange(content, `bank_nifty_tech_analysis[${index}].description`)
+                        }
+                        modules={modules}
+                        formats={formats}
+                        className="bg-slate-900 text-white"
+                      />
+                      <div className="mt-10">
+                        <label className="text-sm font-medium text-slate-300">Resistance Pivots</label>
+                        {item.resistance_pivots &&
+                          item.resistance_pivots.map((pivot, pivotIndex) => (
+                            <div key={pivotIndex} className="flex items-center gap-2 mb-2">
+                              <input
+                                type="text"
+                                value={pivot || ""}
+                                onChange={(e) =>
+                                  handleChange(e, "bank_nifty_tech_analysis", index, `resistance_pivots[${pivotIndex}]`)
+                                }
+                                className="flex-1 px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
+                              />
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  removePivotItem("bank_nifty_tech_analysis", index, "resistance_pivots", pivotIndex)
+                                }
+                                className="text-red-400 hover:text-red-300"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          ))}
+                        <button
+                          type="button"
+                          onClick={() => addPivotItem("bank_nifty_tech_analysis", index, "resistance_pivots")}
+                          className="text-teal-400 hover:text-teal-300"
+                        >
+                          Add Pivot
+                        </button>
+                      </div>
+                      <div className="mt-4">
+                        <label className="text-sm font-medium text-slate-300">Support Pivots</label>
+                        {item.support_pivots &&
+                          item.support_pivots.map((pivot, pivotIndex) => (
+                            <div key={pivotIndex} className="flex items-center gap-2 mb-2">
+                              <input
+                                type="text"
+                                value={pivot || ""}
+                                onChange={(e) =>
+                                  handleChange(e, "bank_nifty_tech_analysis", index, `support_pivots[${pivotIndex}]`)
+                                }
+                                className="flex-1 px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
+                              />
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  removePivotItem("bank_nifty_tech_analysis", index, "support_pivots", pivotIndex)
+                                }
+                                className="text-red-400 hover:text-red-300"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          ))}
+                        <button
+                          type="button"
+                          onClick={() => addPivotItem("bank_nifty_tech_analysis", index, "support_pivots")}
+                          className="text-teal-400 hover:text-teal-300"
+                        >
+                          Add Pivot
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Bullish Outlook */}
+              <div className="bg-slate-900 rounded-xl p-6 border border-slate-700">
+                <h3 className="text-lg font-semibold text-white mb-4">Bullish Outlook</h3>
+                <ReactQuill
+                  theme="snow"
+                  value={editFormData.bullish_outlook || ""}
+                  onChange={(content) => handleEditorChange(content, "bullish_outlook")}
+                  modules={modules}
+                  formats={formats}
+                  className="bg-slate-900 text-white"
+                />
+              </div>
+
+              {/* Bearish Outlook */}
+              <div className="bg-slate-900 rounded-xl p-6 border border-slate-700">
+                <h3 className="text-lg font-semibold text-white mb-4">Bearish Outlook</h3>
+                <ReactQuill
+                  theme="snow"
+                  value={editFormData.bearish_outlook || ""}
+                  onChange={(content) => handleEditorChange(content, "bearish_outlook")}
+                  modules={modules}
+                  formats={formats}
+                  className="bg-slate-900 text-white"
+                />
+              </div>
+
               {/* Corporate Actions */}
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <h4 className="text-lg font-medium text-white">
-                    Corporate Actions
-                  </h4>
+              <div className="bg-slate-900 rounded-xl p-6 border border-slate-700">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-semibold text-white">Corporate Actions</h3>
                   <button
                     type="button"
                     onClick={() =>
                       addArrayItem("corporate_action", {
-                        title: "",
+                        company_name: "",
                         description: "",
-                        type: "Dividend",
+                        tag: "",
+                        price_range: "",
                       })
                     }
                     className="bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded-lg"
@@ -465,69 +718,61 @@ const ManageData = () => {
                     Add Corporate Action
                   </button>
                 </div>
-                {editFormData.corporate_action.map((item, index) => (
-                  <div
-                    key={index}
-                    className="bg-slate-900 p-4 rounded-lg space-y-4"
-                  >
-                    <input
-                      type="text"
-                      placeholder="Title"
-                      value={item.title}
-                      onChange={(e) =>
-                        handleChange(e, "corporate_action", index, "title")
-                      }
-                      className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Description"
-                      value={item.description}
-                      onChange={(e) =>
-                        handleChange(
-                          e,
-                          "corporate_action",
-                          index,
-                          "description"
-                        )
-                      }
-                      className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
-                    />
-                    <select
-                      value={item.type}
-                      onChange={(e) =>
-                        handleChange(e, "corporate_action", index, "type")
-                      }
-                      className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
-                    >
-                      <option value="Dividend">Dividend</option>
-                      <option value="Split">Split</option>
-                      <option value="Bonus">Bonus</option>
-                    </select>
-                    <button
-                      type="button"
-                      onClick={() => removeArrayItem("corporate_action", index)}
-                      className="text-red-400 hover:text-red-300"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
+                {editFormData.corporate_action &&
+                  editFormData.corporate_action.map((item, index) => (
+                    <div key={index} className="bg-slate-800 p-4 rounded-lg mb-4">
+                      <div className="grid gap-4">
+                        <input
+                          type="text"
+                          placeholder="Company Name"
+                          value={item.company_name || ""}
+                          onChange={(e) => handleChange(e, "corporate_action", index, "company_name")}
+                          className="w-full px-4 py-2 rounded-lg bg-slate-700 border border-slate-600 text-white"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Description"
+                          value={item.description || ""}
+                          onChange={(e) => handleChange(e, "corporate_action", index, "description")}
+                          className="w-full px-4 py-2 rounded-lg bg-slate-700 border border-slate-600 text-white"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Tag"
+                          value={item.tag || ""}
+                          onChange={(e) => handleChange(e, "corporate_action", index, "tag")}
+                          className="w-full px-4 py-2 rounded-lg bg-slate-700 border border-slate-600 text-white"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Price Range"
+                          value={item.price_range || ""}
+                          onChange={(e) => handleChange(e, "corporate_action", index, "price_range")}
+                          className="w-full px-4 py-2 rounded-lg bg-slate-700 border border-slate-600 text-white"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeArrayItem("corporate_action", index)}
+                          className="text-red-400 hover:text-red-300"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ))}
               </div>
 
               {/* Earning Reports */}
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <h4 className="text-lg font-medium text-white">
-                    Earning Reports
-                  </h4>
+              <div className="bg-slate-900 rounded-xl p-6 border border-slate-700">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-semibold text-white">Earning Reports</h3>
                   <button
                     type="button"
                     onClick={() =>
                       addArrayItem("earning_report", {
-                        title: "",
+                        company_name: "",
                         description: "",
-                        type: "Result",
+                        price_range: "",
                       })
                     }
                     className="bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded-lg"
@@ -535,56 +780,47 @@ const ManageData = () => {
                     Add Earning Report
                   </button>
                 </div>
-                {editFormData.earning_report.map((item, index) => (
-                  <div
-                    key={index}
-                    className="bg-slate-900 p-4 rounded-lg space-y-4"
-                  >
-                    <input
-                      type="text"
-                      placeholder="Title"
-                      value={item.title}
-                      onChange={(e) =>
-                        handleChange(e, "earning_report", index, "title")
-                      }
-                      className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Description"
-                      value={item.description}
-                      onChange={(e) =>
-                        handleChange(e, "earning_report", index, "description")
-                      }
-                      className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
-                    />
-                    <select
-                      value={item.type}
-                      onChange={(e) =>
-                        handleChange(e, "earning_report", index, "type")
-                      }
-                      className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
-                    >
-                      <option value="Result">Result</option>
-                      <option value="Preview">Preview</option>
-                    </select>
-                    <button
-                      type="button"
-                      onClick={() => removeArrayItem("earning_report", index)}
-                      className="text-red-400 hover:text-red-300"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
+                {editFormData.earning_report &&
+                  editFormData.earning_report.map((item, index) => (
+                    <div key={index} className="bg-slate-800 p-4 rounded-lg mb-4">
+                      <div className="grid gap-4">
+                        <input
+                          type="text"
+                          placeholder="Company Name"
+                          value={item.company_name || ""}
+                          onChange={(e) => handleChange(e, "earning_report", index, "company_name")}
+                          className="w-full px-4 py-2 rounded-lg bg-slate-700 border border-slate-600 text-white"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Description"
+                          value={item.description || ""}
+                          onChange={(e) => handleChange(e, "earning_report", index, "description")}
+                          className="w-full px-4 py-2 rounded-lg bg-slate-700 border border-slate-600 text-white"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Price Range"
+                          value={item.price_range || ""}
+                          onChange={(e) => handleChange(e, "earning_report", index, "price_range")}
+                          className="w-full px-4 py-2 rounded-lg bg-slate-700 border border-slate-600 text-white"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeArrayItem("earning_report", index)}
+                          className="text-red-400 hover:text-red-300"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ))}
               </div>
 
               {/* Upcoming IPOs */}
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <h4 className="text-lg font-medium text-white">
-                    Upcoming IPOs
-                  </h4>
+              <div className="bg-slate-900 rounded-xl p-6 border border-slate-700">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-semibold text-white">Upcoming IPOs</h3>
                   <button
                     type="button"
                     onClick={() =>
@@ -601,182 +837,196 @@ const ManageData = () => {
                     Add IPO
                   </button>
                 </div>
-                {editFormData.upcoming_ipos.map((item, index) => (
-                  <div
-                    key={index}
-                    className="bg-slate-900 p-4 rounded-lg space-y-4"
+                {editFormData.upcoming_ipos &&
+                  editFormData.upcoming_ipos.map((item, index) => (
+                    <div key={index} className="bg-slate-800 p-4 rounded-lg mb-4">
+                      <div className="grid gap-4">
+                        <input
+                          type="text"
+                          placeholder="Company Name"
+                          value={item.company_name || ""}
+                          onChange={(e) => handleChange(e, "upcoming_ipos", index, "company_name")}
+                          className="w-full px-4 py-2 rounded-lg bg-slate-700 border border-slate-600 text-white"
+                        />
+                        <input
+                          type="date"
+                          placeholder="Dates"
+                          value={item.dates || ""}
+                          onChange={(e) => handleChange(e, "upcoming_ipos", index, "dates")}
+                          className="w-full px-4 py-2 rounded-lg bg-slate-700 border border-slate-600 text-white"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Price Range"
+                          value={item.price_range || ""}
+                          onChange={(e) => handleChange(e, "upcoming_ipos", index, "price_range")}
+                          className="w-full px-4 py-2 rounded-lg bg-slate-700 border border-slate-600 text-white"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Lot Size"
+                          value={item.lot_size || ""}
+                          onChange={(e) => handleChange(e, "upcoming_ipos", index, "lot_size")}
+                          className="w-full px-4 py-2 rounded-lg bg-slate-700 border border-slate-600 text-white"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Subscription"
+                          value={item.subscription || ""}
+                          onChange={(e) => handleChange(e, "upcoming_ipos", index, "subscription")}
+                          className="w-full px-4 py-2 rounded-lg bg-slate-700 border border-slate-600 text-white"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeArrayItem("upcoming_ipos", index)}
+                          className="text-red-400 hover:text-red-300"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+
+              {/* FII/DII Activity */}
+              <div className="bg-slate-900 rounded-xl p-6 border border-slate-700">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-semibold text-white">FII/DII Activity</h3>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      addArrayItem("fiidii_activity", {
+                        currentDate: "",
+                        fiiNet: "",
+                        diiNet: "",
+                      })
+                    }
+                    className="bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded-lg"
                   >
-                    <input
-                      type="text"
-                      placeholder="Company Name"
-                      value={item.company_name}
-                      onChange={(e) =>
-                        handleChange(e, "upcoming_ipos", index, "company_name")
-                      }
-                      className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Dates"
-                      value={item.dates}
-                      onChange={(e) =>
-                        handleChange(e, "upcoming_ipos", index, "dates")
-                      }
-                      className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Price Range"
-                      value={item.price_range}
-                      onChange={(e) =>
-                        handleChange(e, "upcoming_ipos", index, "price_range")
-                      }
-                      className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Lot Size"
-                      value={item.lot_size}
-                      onChange={(e) =>
-                        handleChange(e, "upcoming_ipos", index, "lot_size")
-                      }
-                      className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Subscription"
-                      value={item.subscription}
-                      onChange={(e) =>
-                        handleChange(e, "upcoming_ipos", index, "subscription")
-                      }
-                      className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeArrayItem("upcoming_ipos", index)}
-                      className="text-red-400 hover:text-red-300"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
+                    Add FII/DII Activity
+                  </button>
+                </div>
+                {editFormData.fiidii_activity &&
+                  editFormData.fiidii_activity.map((item, index) => (
+                    <div key={index} className="bg-slate-800 p-4 rounded-lg mb-4">
+                      <div className="grid gap-4">
+                        <input
+                          type="date"
+                          placeholder="Current Date"
+                          value={item.currentDate || ""}
+                          onChange={(e) => handleChange(e, "fiidii_activity", index, "currentDate")}
+                          className="w-full px-4 py-2 rounded-lg bg-slate-700 border border-slate-600 text-white"
+                        />
+                        <input
+                          type="text"
+                          placeholder="FII Net"
+                          value={item.fiiNet || ""}
+                          onChange={(e) => handleChange(e, "fiidii_activity", index, "fiiNet")}
+                          className="w-full px-4 py-2 rounded-lg bg-slate-700 border border-slate-600 text-white"
+                        />
+                        <input
+                          type="text"
+                          placeholder="DII Net"
+                          value={item.diiNet || ""}
+                          onChange={(e) => handleChange(e, "fiidii_activity", index, "diiNet")}
+                          className="w-full px-4 py-2 rounded-lg bg-slate-700 border border-slate-600 text-white"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeArrayItem("fiidii_activity", index)}
+                          className="text-red-400 hover:text-red-300"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ))}
               </div>
 
-              {/* Rich Text Editor Fields */}
-              <div className="space-y-6">
-                {/* Today's Learning */}
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Today's Learning
-                  </label>
-                  <ReactQuill
-                    theme="snow"
-                    value={editFormData.todays_learning}
-                    onChange={(content) =>
-                      handleEditorChange(content, "todays_learning")
-                    }
-                    modules={modules}
-                    formats={formats}
-                    className="bg-slate-800 text-white h-64 mb-12"
-                  />
-                </div>
-
-                {/* Risk Management */}
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Risk Management
-                  </label>
-                  <ReactQuill
-                    theme="snow"
-                    value={editFormData.risk_management}
-                    onChange={(content) =>
-                      handleEditorChange(content, "risk_management")
-                    }
-                    modules={modules}
-                    formats={formats}
-                    className="bg-slate-800 text-white h-64 mb-12"
-                  />
-                </div>
-
-                {/* Trading Strategy */}
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Trading Strategy
-                  </label>
-                  <ReactQuill
-                    theme="snow"
-                    value={editFormData.trading_strategy}
-                    onChange={(content) =>
-                      handleEditorChange(content, "trading_strategy")
-                    }
-                    modules={modules}
-                    formats={formats}
-                    className="bg-slate-800 text-white h-64 mb-12"
-                  />
-                </div>
-              </div>
-
-              {/* Modal Footer */}
-              <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-700">
+              <div className="flex justify-end pt-6 space-x-3">
                 <button
+                  type="button"
                   onClick={() => setIsEditModalOpen(false)}
-                  className="px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700"
+                  className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors"
                 >
                   Cancel
                 </button>
                 <button
-                  onClick={handleEditSubmit}
-                  disabled={loading}
-                  className="px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 
-                           disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  type="submit"
+                  disabled={isSaving}
+                  className={`flex items-center gap-2 bg-teal-500 hover:bg-teal-600
+                           text-white px-4 py-2 rounded-lg transition-colors
+                           ${isSaving ? "opacity-75 cursor-not-allowed" : ""}`}
                 >
-                  {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-                  Save Changes
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      Save Changes
+                    </>
+                  )}
                 </button>
               </div>
-            </div>
-          </div>
-        </Modal>
+            </form>
+          </motion.div>
+        </div>
+      )}
 
-        {/* Delete Modal */}
-        <Modal
-          isOpen={isDeleteModalOpen}
-          onClose={() => setIsDeleteModalOpen(false)}
-        >
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <AlertTriangle className="w-6 h-6 text-red-500" />
-              <h3 className="text-xl font-semibold text-white">
-                Confirm Deletion
-              </h3>
+      {/* Delete Confirmation Modal */}
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="bg-slate-800 rounded-xl p-6 border border-slate-700 w-full max-w-md"
+          >
+            <div className="flex items-center mb-4 text-amber-500">
+              <AlertTriangle className="w-6 h-6 mr-2" />
+              <h2 className="text-xl font-semibold">Confirm Deletion</h2>
             </div>
 
-            <p className="text-slate-300">
-              Are you sure you want to delete this content? This action cannot
-              be undone.
+            <p className="text-white mb-6">
+              Are you sure you want to delete "{selectedItem?.title}"? This action cannot be undone.
             </p>
 
-            <div className="flex justify-end gap-3 pt-4 mt-4 border-t border-slate-700">
+            <div className="flex justify-end space-x-3">
               <button
                 onClick={() => setIsDeleteModalOpen(false)}
-                className="px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700"
+                className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors"
               >
                 Cancel
               </button>
               <button
-                onClick={handleDeleteConfirm}
-                disabled={loading}
-                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 
-                         disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                onClick={handleConfirmDelete}
+                disabled={isDeleting}
+                className={`flex items-center gap-2 bg-red-500 hover:bg-red-600
+                         text-white px-4 py-2 rounded-lg transition-colors
+                         ${isDeleting ? "opacity-75 cursor-not-allowed" : ""}`}
               >
-                {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-                Delete
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    Delete
+                  </>
+                )}
               </button>
             </div>
-          </div>
-        </Modal>
-      </div>
+          </motion.div>
+        </div>
+      )}
     </div>
-  );
-};
-export default ManageData;
+  )
+}
+
+export default ManageData
+

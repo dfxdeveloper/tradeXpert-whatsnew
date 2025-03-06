@@ -17,25 +17,43 @@ const AddData = () => {
   const initialFormData = {
     title: "",
     description: "",
-    news: [
+    fiidii_activity: [
       {
-        title: "",
-        description: "",
-        pubDate: "",
+        currentDate: "",
+        fiiNet: "",
+        diiNet: "",
       },
     ],
+    market_bulletin: "",
+    nifty_tech_analysis: [
+      {
+        description: "",
+        resistance_pivots: [""],
+        support_pivots: [""],
+      },
+    ],
+    bank_nifty_tech_analysis: [
+      {
+        description: "",
+        resistance_pivots: [""],
+        support_pivots: [""],
+      },
+    ],
+    bullish_outlook: "",
+    bearish_outlook: "",
     corporate_action: [
       {
-        title: "",
+        company_name: "",
         description: "",
-        type: "Dividend",
+        tag: "",
+        price_range: "",
       },
     ],
     earning_report: [
       {
-        title: "",
+        company_name: "",
         description: "",
-        type: "Result",
+        price_range: "",
       },
     ],
     upcoming_ipos: [
@@ -47,9 +65,6 @@ const AddData = () => {
         subscription: "",
       },
     ],
-    todays_learning: "",
-    risk_management: "",
-    trading_strategy: "",
   };
 
   const [formData, setFormData] = useState(initialFormData);
@@ -63,7 +78,7 @@ const AddData = () => {
       [{ color: [] }, { background: [] }],
       [{ list: "ordered" }, { list: "bullet" }],
       [{ align: [] }],
-      ["link"],
+      ["link", "image"],
       ["clean"],
     ],
   };
@@ -80,18 +95,66 @@ const AddData = () => {
     "bullet",
     "align",
     "link",
+    "image"
   ];
+  
+  const formatDate = (date) => {
+    if (!date) return "";
+    
+    if (/^\d{2}-\d{2}-\d{4}$/.test(date)) {
+      return date;
+    }
+    
+    try {
 
+      const d = new Date(date);
+      if (isNaN(d.getTime())) {
+        console.error("Invalid date input:", date);
+        return "";
+      }
+      
+      const day = String(d.getDate()).padStart(2, "0");
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const year = d.getFullYear();
+      return `${day}-${month}-${year}`;
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return "";
+    }
+  };
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
     const loadingToast = showLoadingToast("Saving data...");
     setLoading(true);
-
+  
     try {
+      const dataToSubmit = JSON.parse(JSON.stringify(formData));
+      if (dataToSubmit.fiidii_activity) {
+        dataToSubmit.fiidii_activity = dataToSubmit.fiidii_activity.map((activity) => {
+          return {
+            ...activity,
+            currentDate: activity.currentDate ? formatDate(activity.currentDate) : ""
+          };
+        }).filter(activity => activity.currentDate); 
+      }
+  
+      if (dataToSubmit.upcoming_ipos) {
+        dataToSubmit.upcoming_ipos = dataToSubmit.upcoming_ipos.map((ipo) => {
+          return {
+            ...ipo,
+            dates: ipo.dates ? formatDate(ipo.dates) : ""
+          };
+        }).filter(ipo => ipo.dates);
+      }
+  
+      console.log("Sanitized data to submit:", dataToSubmit);
+  
       const response = await axios.post(
         "https://stage.api.tradexpert.ai/api/v1/admin/whatsnew",
-        formData
+        dataToSubmit
       );
+  
       toast.dismiss(loadingToast);
       showSuccessToast("Data saved successfully!");
       setSubmitted(true);
@@ -99,25 +162,24 @@ const AddData = () => {
       setTimeout(() => setSubmitted(false), 2000);
     } catch (error) {
       toast.dismiss(loadingToast);
-      showErrorToast(error.message || "Error saving data");
-      console.error("Error submitting form:", error);
+      console.error("Full submission error:", error);
+      showErrorToast(
+        error.response?.data?.message || 
+        error.message || 
+        "Error saving data"
+      );
     } finally {
       setLoading(false);
     }
   };
+
   const handleChange = (e, arrayName, index, field) => {
     if (arrayName) {
-      const updatedArray = [...formData[arrayName]];
-      if (field === "pubDate") {
-       
-        const dateValue = e.target.value; 
-        if (dateValue) {
-          const [year, month, day] = dateValue.split("-");
-          const formattedDate = `${day}-${month}-${year}`; 
-          updatedArray[index][field] = formattedDate;
-        } else {
-          updatedArray[index][field] = "";
-        }
+      const updatedArray = [...formData[arrayName]]
+      if (field.includes("[")) {
+        const [baseField, indexStr] = field.split("[");
+        const pivotIndex = parseInt(indexStr.replace("]", ""));
+        updatedArray[index][baseField][pivotIndex] = e.target.value;
       } else {
         updatedArray[index][field] = e.target.value;
       }
@@ -126,6 +188,7 @@ const AddData = () => {
         ...prev,
         [arrayName]: updatedArray,
       }));
+      
     } else {
       const { name, value } = e.target;
       setFormData((prev) => ({
@@ -136,10 +199,28 @@ const AddData = () => {
   };
 
   const handleEditorChange = (content, field) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: content,
-    }));
+    setFormData((prevData) => {
+      const matches = field.match(/(\w+)\[(\d+)\]\.(\w+)/);
+
+      if (matches) {
+        const [, arrayName, indexStr, subField] = matches;
+        const index = parseInt(indexStr);
+        const updatedArray = [...prevData[arrayName]];
+        updatedArray[index] = {
+          ...updatedArray[index],
+          [subField]: content,
+        };
+
+        return {
+          ...prevData,
+          [arrayName]: updatedArray,
+        };
+      }
+      return {
+        ...prevData,
+        [field]: content,
+      };
+    });
   };
 
   const addArrayItem = (arrayName, template) => {
@@ -156,16 +237,25 @@ const AddData = () => {
     }));
   };
 
-  const formatDateForInput = (dateString) => {
-    if (!dateString) return "";
-    const match = dateString.match(/^(\d{2})-(\d{2})-(\d{4})$/);
-    if (match) {
-      const [, day, month, year] = match;
-      return `${year}-${month}-${day}`; 
-    }
-    return dateString;
+  const addPivotItem = (arrayName, analysisIndex, field) => {
+    const updatedAnalysis = [...formData[arrayName]];
+    updatedAnalysis[analysisIndex][field].push("");
+    setFormData((prev) => ({
+      ...prev,
+      [arrayName]: updatedAnalysis,
+    }));
   };
 
+  const removePivotItem = (arrayName, analysisIndex, field, pivotIndex) => {
+    const updatedAnalysis = [...formData[arrayName]];
+    updatedAnalysis[analysisIndex][field] = updatedAnalysis[analysisIndex][
+      field
+    ].filter((_, i) => i !== pivotIndex);
+    setFormData((prev) => ({
+      ...prev,
+      [arrayName]: updatedAnalysis,
+    }));
+  };
   const containerVariants = {
     hidden: { opacity: 0, y: 50 },
     visible: {
@@ -223,7 +313,7 @@ const AddData = () => {
       >
         <Link
           to="/"
-          className="group flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white 
+          className="group flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white
                     px-4 py-2 rounded-xl border border-slate-700 transition-all duration-300"
         >
           <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
@@ -266,7 +356,7 @@ const AddData = () => {
                   name="title"
                   value={formData.title}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 rounded-lg bg-slate-900 border border-slate-700 
+                  className="w-full px-4 py-2 rounded-lg bg-slate-900 border border-slate-700
                            text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                 />
               </div>
@@ -288,67 +378,336 @@ const AddData = () => {
             </div>
           </motion.div>
 
-          {/* News Section */}
+          {/* Market Bulletin */}
           <motion.div
             variants={itemVariants}
             className="bg-slate-800 rounded-xl p-6 border border-slate-700"
           >
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-semibold text-white">News</h2>
-              <button
-                type="button"
-                onClick={() =>
-                  addArrayItem("news", {
-                    title: "",
-                    description: "",
-                    pubDate: "",
-                  })
-                }
-                className="bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded-lg"
-              >
-                Add News
-              </button>
-            </div>
-            {formData.news.map((item, index) => (
+            <h2 className="text-xl font-semibold text-white mb-6">
+              Market Bulletin
+            </h2>
+            <ReactQuill
+              theme="snow"
+              value={formData.market_bulletin}
+              onChange={(content) =>
+                handleEditorChange(content, "market_bulletin")
+              }
+              modules={modules}
+              formats={formats}
+              className="bg-slate-900 text-white"
+            />
+          </motion.div>
+
+          {/* Nifty Tech Analysis */}
+          <motion.div
+            variants={itemVariants}
+            className="bg-slate-800 rounded-xl p-6 border border-slate-700"
+          >
+            <h2 className="text-xl font-semibold text-white mb-6">
+              Nifty Tech Analysis
+            </h2>
+            {formData.nifty_tech_analysis.map((item, index) => (
               <div key={index} className="bg-slate-900 p-4 rounded-lg mb-4">
                 <div className="grid gap-4">
-                  <input
-                    type="text"
-                    placeholder="Title"
-                    value={item.title}
-                    onChange={(e) => handleChange(e, "news", index, "title")}
-                    className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Description"
+                  <label className="text-sm font-medium text-slate-300">
+                    Description
+                  </label>
+                  <ReactQuill
+                    theme="snow"
                     value={item.description}
-                    onChange={(e) =>
-                      handleChange(e, "news", index, "description")
+                    onChange={(content) =>
+                      handleEditorChange(
+                        content,
+                        `nifty_tech_analysis[${index}].description`
+                      )
                     }
-                    className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
+                    modules={modules}
+                    formats={formats}
+                    className="bg-slate-900 text-white"
                   />
-                  
-                    <input
-                      type="date"
-                      placeholder="Publication Date"
-                      value={formatDateForInput(item.pubDate)}
-                      onChange={(e) =>
-                        handleChange(e, "news", index, "pubDate")
+                  <div className="mt-10">
+                    <label className="text-sm font-medium text-slate-300">
+                      Resistance Pivots
+                    </label>
+                    {item.resistance_pivots.map((pivot, pivotIndex) => (
+                      <div
+                        key={pivotIndex}
+                        className="flex items-center gap-2 mb-2"
+                      >
+                        <input
+                          type="text"
+                          value={pivot}
+                          onChange={(e) =>
+                            handleChange(
+                              e,
+                              "nifty_tech_analysis",
+                              index,
+                              `resistance_pivots[${pivotIndex}]`
+                            )
+                          }
+                          className="flex-1 px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            removePivotItem(
+                              "nifty_tech_analysis",
+                              index,
+                              "resistance_pivots",
+                              pivotIndex
+                            )
+                          }
+                          className="text-red-400 hover:text-red-300"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        addPivotItem(
+                          "nifty_tech_analysis",
+                          index,
+                          "resistance_pivots"
+                        )
                       }
-                      className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
-                    />
-                  
-                  <button
-                    type="button"
-                    onClick={() => removeArrayItem("news", index)}
-                    className="text-red-400 hover:text-red-300"
-                  >
-                    Remove
-                  </button>
+                      className="text-teal-400 hover:text-teal-300"
+                    >
+                      Add Pivot
+                    </button>
+                  </div>
+                  <div className="mt-4">
+                    <label className="text-sm font-medium text-slate-300">
+                      Support Pivots
+                    </label>
+                    {item.support_pivots.map((pivot, pivotIndex) => (
+                      <div
+                        key={pivotIndex}
+                        className="flex items-center gap-2 mb-2"
+                      >
+                        <input
+                          type="text"
+                          value={pivot}
+                          onChange={(e) =>
+                            handleChange(
+                              e,
+                              "nifty_tech_analysis",
+                              index,
+                              `support_pivots[${pivotIndex}]`
+                            )
+                          }
+                          className="flex-1 px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            removePivotItem(
+                              "nifty_tech_analysis",
+                              index,
+                              "support_pivots",
+                              pivotIndex
+                            )
+                          }
+                          className="text-red-400 hover:text-red-300"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        addPivotItem(
+                          "nifty_tech_analysis",
+                          index,
+                          "support_pivots"
+                        )
+                      }
+                      className="text-teal-400 hover:text-teal-300"
+                    >
+                      Add Pivot
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
+          </motion.div>
+
+          {/* Bank Nifty Tech Analysis */}
+          <motion.div
+            variants={itemVariants}
+            className="bg-slate-800 rounded-xl p-6 border border-slate-700"
+          >
+            <h2 className="text-xl font-semibold text-white mb-6">
+              Bank Nifty Tech Analysis
+            </h2>
+            {formData.bank_nifty_tech_analysis.map((item, index) => (
+              <div key={index} className="bg-slate-900 p-4 rounded-lg mb-4">
+                <div className="grid gap-4">
+                  <label className="text-sm font-medium text-slate-300">
+                    Description
+                  </label>
+                  <ReactQuill
+                    theme="snow"
+                    value={item.description}
+                    onChange={(content) =>
+                      handleEditorChange(
+                        content,
+                        `bank_nifty_tech_analysis[${index}].description`
+                      )
+                    }
+                    modules={modules}
+                    formats={formats}
+                    className="bg-slate-900 text-white"
+                  />
+                  <div className="mt-10">
+                    <label className="text-sm font-medium text-slate-300">
+                      Resistance Pivots
+                    </label>
+                    {item.resistance_pivots.map((pivot, pivotIndex) => (
+                      <div
+                        key={pivotIndex}
+                        className="flex items-center gap-2 mb-2"
+                      >
+                        <input
+                          type="text"
+                          value={pivot}
+                          onChange={(e) =>
+                            handleChange(
+                              e,
+                              "bank_nifty_tech_analysis",
+                              index,
+                              `resistance_pivots[${pivotIndex}]`
+                            )
+                          }
+                          className="flex-1 px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            removePivotItem(
+                              "bank_nifty_tech_analysis",
+                              index,
+                              "resistance_pivots",
+                              pivotIndex
+                            )
+                          }
+                          className="text-red-400 hover:text-red-300"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        addPivotItem(
+                          "bank_nifty_tech_analysis",
+                          index,
+                          "resistance_pivots"
+                        )
+                      }
+                      className="text-teal-400 hover:text-teal-300"
+                    >
+                      Add Pivot
+                    </button>
+                  </div>
+                  <div className="mt-4">
+                    <label className="text-sm font-medium text-slate-300">
+                      Support Pivots
+                    </label>
+                    {item.support_pivots.map((pivot, pivotIndex) => (
+                      <div
+                        key={pivotIndex}
+                        className="flex items-center gap-2 mb-2"
+                      >
+                        <input
+                          type="text"
+                          value={pivot}
+                          onChange={(e) =>
+                            handleChange(
+                              e,
+                              "bank_nifty_tech_analysis",
+                              index,
+                              `support_pivots[${pivotIndex}]`
+                            )
+                          }
+                          className="flex-1 px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            removePivotItem(
+                              "bank_nifty_tech_analysis",
+                              index,
+                              "support_pivots",
+                              pivotIndex
+                            )
+                          }
+                          className="text-red-400 hover:text-red-300"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        addPivotItem(
+                          "bank_nifty_tech_analysis",
+                          index,
+                          "support_pivots"
+                        )
+                      }
+                      className="text-teal-400 hover:text-teal-300"
+                    >
+                      Add Pivot
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </motion.div>
+
+          {/* Bullish Outlook */}
+          <motion.div
+            variants={itemVariants}
+            className="bg-slate-800 rounded-xl p-6 border border-slate-700"
+          >
+            <label className="block text-sm font-medium text-slate-300 mb-4">
+              Bullish Outlook
+            </label>
+            <ReactQuill
+              theme="snow"
+              value={formData.bullish_outlook}
+              onChange={(content) =>
+                handleEditorChange(content, "bullish_outlook")
+              }
+              modules={modules}
+              formats={formats}
+              className="bg-slate-900 text-white"
+            />
+          </motion.div>
+
+          {/* Bearish Outlook */}
+          <motion.div
+            variants={itemVariants}
+            className="bg-slate-800 rounded-xl p-6 border border-slate-700"
+          >
+            <label className="block text-sm font-medium text-slate-300 mb-4">
+              Bearish Outlook
+            </label>
+            <ReactQuill
+              theme="snow"
+              value={formData.bearish_outlook}
+              onChange={(content) =>
+                handleEditorChange(content, "bearish_outlook")
+              }
+              modules={modules}
+              formats={formats}
+              className="bg-slate-900 text-white"
+            />
           </motion.div>
 
           {/* Corporate Actions */}
@@ -364,9 +723,10 @@ const AddData = () => {
                 type="button"
                 onClick={() =>
                   addArrayItem("corporate_action", {
-                    title: "",
+                    company_name: "",
                     description: "",
-                    type: "Dividend",
+                    tag: "",
+                    price_range: "",
                   })
                 }
                 className="bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded-lg"
@@ -379,10 +739,10 @@ const AddData = () => {
                 <div className="grid gap-4">
                   <input
                     type="text"
-                    placeholder="Title"
-                    value={item.title}
+                    placeholder="Company Name"
+                    value={item.company_name}
                     onChange={(e) =>
-                      handleChange(e, "corporate_action", index, "title")
+                      handleChange(e, "corporate_action", index, "company_name")
                     }
                     className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
                   />
@@ -395,17 +755,24 @@ const AddData = () => {
                     }
                     className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
                   />
-                  <select
-                    value={item.type}
+                  <input
+                    type="text"
+                    placeholder="Tag"
+                    value={item.tag}
                     onChange={(e) =>
-                      handleChange(e, "corporate_action", index, "type")
+                      handleChange(e, "corporate_action", index, "tag")
                     }
                     className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
-                  >
-                    <option value="Dividend">Dividend</option>
-                    <option value="Split">Split</option>
-                    <option value="Bonus">Bonus</option>
-                  </select>
+                  />
+                  <input
+                    type="text"
+                    placeholder="Price Range"
+                    value={item.price_range}
+                    onChange={(e) =>
+                      handleChange(e, "corporate_action", index, "price_range")
+                    }
+                    className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
+                  />
                   <button
                     type="button"
                     onClick={() => removeArrayItem("corporate_action", index)}
@@ -431,9 +798,9 @@ const AddData = () => {
                 type="button"
                 onClick={() =>
                   addArrayItem("earning_report", {
-                    title: "",
+                    company_name: "",
                     description: "",
-                    type: "Result",
+                    price_range: "",
                   })
                 }
                 className="bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded-lg"
@@ -446,10 +813,10 @@ const AddData = () => {
                 <div className="grid gap-4">
                   <input
                     type="text"
-                    placeholder="Title"
-                    value={item.title}
+                    placeholder="Company Name"
+                    value={item.company_name}
                     onChange={(e) =>
-                      handleChange(e, "earning_report", index, "title")
+                      handleChange(e, "earning_report", index, "company_name")
                     }
                     className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
                   />
@@ -462,16 +829,15 @@ const AddData = () => {
                     }
                     className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
                   />
-                  <select
-                    value={item.type}
+                  <input
+                    type="text"
+                    placeholder="Price Range"
+                    value={item.price_range}
                     onChange={(e) =>
-                      handleChange(e, "earning_report", index, "type")
+                      handleChange(e, "earning_report", index, "price_range")
                     }
                     className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
-                  >
-                    <option value="Result">Result</option>
-                    <option value="Preview">Preview</option>
-                  </select>
+                  />
                   <button
                     type="button"
                     onClick={() => removeArrayItem("earning_report", index)}
@@ -522,7 +888,7 @@ const AddData = () => {
                     className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
                   />
                   <input
-                    type="text"
+                    type="date"
                     placeholder="Dates"
                     value={item.dates}
                     onChange={(e) =>
@@ -569,60 +935,70 @@ const AddData = () => {
             ))}
           </motion.div>
 
-          {/* Rich Text Editor Fields */}
-          <motion.div variants={itemVariants} className="space-y-6">
-            {/* Today's Learning */}
-            <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-              <label className="block text-sm font-medium text-slate-300 mb-4">
-                Today's Learning
-              </label>
-              <ReactQuill
-                theme="snow"
-                value={formData.todays_learning}
-                onChange={(content) =>
-                  handleEditorChange(content, "todays_learning")
+          {/* FII/DII Activity */}
+          <motion.div
+            variants={itemVariants}
+            className="bg-slate-800 rounded-xl p-6 border border-slate-700"
+          >
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold text-white">
+                FII/DII Activity
+              </h2>
+              <button
+                type="button"
+                onClick={() =>
+                  addArrayItem("fiidii_activity", {
+                    currentDate: "",
+                    fiiNet: "",
+                    diiNet: "",
+                  })
                 }
-                modules={modules}
-                formats={formats}
-                className="bg-slate-900 text-white"
-              />
+                className="bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded-lg"
+              >
+                Add FII/DII Activity
+              </button>
             </div>
-
-            {/* Risk Management */}
-            <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-              <label className="block text-sm font-medium text-slate-300 mb-4">
-                Risk Management
-              </label>
-              <ReactQuill
-                theme="snow"
-                value={formData.risk_management}
-                onChange={(content) =>
-                  handleEditorChange(content, "risk_management")
-                }
-                modules={modules}
-                formats={formats}
-                className="bg-slate-900 text-white"
-              />
-            </div>
-
-            {/* Trading Strategy */}
-            <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-              <label className="block text-sm font-medium text-slate-300 mb-4">
-                Trading Strategy
-              </label>
-              <ReactQuill
-                theme="snow"
-                value={formData.trading_strategy}
-                onChange={(content) =>
-                  handleEditorChange(content, "trading_strategy")
-                }
-                modules={modules}
-                formats={formats}
-                className="bg-slate-900 text-white"
-              />
-            </div>
+            {formData.fiidii_activity.map((item, index) => (
+              <div key={index} className="bg-slate-900 p-4 rounded-lg mb-4">
+                <div className="grid gap-4">
+                  <input
+                    type="date"
+                    placeholder="Current Date"
+                    value={item.currentDate}
+                    onChange={(e) =>
+                      handleChange(e, "fiidii_activity", index, "currentDate")
+                    }
+                    className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
+                  />
+                  <input
+                    type="text"
+                    placeholder="FII Net"
+                    value={item.fiiNet}
+                    onChange={(e) =>
+                      handleChange(e, "fiidii_activity", index, "fiiNet")
+                    }
+                    className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
+                  />
+                  <input
+                    type="text"
+                    placeholder="DII Net"
+                    value={item.diiNet}
+                    onChange={(e) =>
+                      handleChange(e, "fiidii_activity", index, "diiNet")
+                    }
+                    className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeArrayItem("fiidii_activity", index)}
+                    className="text-red-400 hover:text-red-300"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            ))}
           </motion.div>
-
           {/* Submit Button */}
           <motion.div
             variants={itemVariants}
@@ -631,7 +1007,7 @@ const AddData = () => {
             <button
               type="submit"
               disabled={loading || submitted}
-              className={`group flex items-center gap-2 bg-teal-500 hover:bg-teal-600 
+              className={`group flex items-center gap-2 bg-teal-500 hover:bg-teal-600
                        text-white px-8 py-4 rounded-xl font-medium transition-all duration-300
                        ${
                          loading || submitted
