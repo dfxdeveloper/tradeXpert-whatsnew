@@ -84,6 +84,9 @@ const ManageData = () => {
       ["clean"],
       [{ indent: "-1" }, { indent: "+1" }],
     ],
+    clipboard: {
+      matchVisual: false 
+    }
   }
 
   const formats = [
@@ -99,6 +102,7 @@ const ManageData = () => {
     "align",
     "link",
     "image",
+    "whitespace",
     "indent",
   ]
 
