@@ -82,6 +82,9 @@ const AddData = () => {
       [{ indent: "-1" }, { indent: "+1" }],
       ["clean"],
     ],
+    clipboard: {
+      matchVisual: false 
+    }
   };
 
   const formats = [
@@ -97,7 +100,8 @@ const AddData = () => {
     "align",
     "link",
     "indent",
-    "image"
+    "image",
+    "whitespace",
   ];
   
   const formatDate = (date) => {
