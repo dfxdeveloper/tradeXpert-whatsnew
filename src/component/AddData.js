@@ -79,6 +79,7 @@ const AddData = () => {
       [{ list: "ordered" }, { list: "bullet" }],
       [{ align: [] }],
       ["link", "image"],
+      [{ indent: "-1" }, { indent: "+1" }],
       ["clean"],
     ],
   };
@@ -95,6 +96,7 @@ const AddData = () => {
     "bullet",
     "align",
     "link",
+    "indent",
     "image"
   ];
   

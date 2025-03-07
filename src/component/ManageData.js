@@ -82,6 +82,7 @@ const ManageData = () => {
       [{ align: [] }],
       ["link", "image"],
       ["clean"],
+      [{ indent: "-1" }, { indent: "+1" }],
     ],
   }
 
@@ -98,6 +99,7 @@ const ManageData = () => {
     "align",
     "link",
     "image",
+    "indent",
   ]
 
   useEffect(() => {
