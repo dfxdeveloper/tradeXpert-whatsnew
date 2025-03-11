@@ -1377,6 +1377,20 @@ const ManageData = () => {
                           }
                           className="w-full px-4 py-2 rounded-lg bg-slate-700 border border-slate-600 text-white"
                         />
+                          <input
+                          type="text"
+                          placeholder="Tag"
+                          value={item.tag || ""}
+                          onChange={(e) =>
+                            handleChange(
+                              e,
+                              "earning_report",
+                              index,
+                              "tag"
+                            )
+                          }
+                          className="w-full px-4 py-2 rounded-lg bg-slate-700 border border-slate-600 text-white"
+                        />
                         <input
                           type="text"
                           placeholder="Price Range"
