@@ -52,6 +52,7 @@ const AddData = () => {
     earning_report: [
       {
         company_name: "",
+        tag: "",
         description: "",
         price_range: "",
       },
@@ -63,6 +64,34 @@ const AddData = () => {
         price_range: "",
         lot_size: "",
         subscription: "",
+      },
+    ],
+    top_gainers: [
+      {
+        stock_name: "",
+        price: "",
+        value: "",
+      },
+    ],
+    top_losers: [
+      {
+        stock_name: "",
+        price: "",
+        value: "",
+      },
+    ],
+    volume_gainers: [
+      {
+        stock_name: "",
+        price: "",
+        value: "",
+      },
+    ],
+    sectoral_performance: [
+      {
+        price: "",
+        value: "",
+        title: "",
       },
     ],
   };
@@ -83,8 +112,8 @@ const AddData = () => {
       ["clean"],
     ],
     clipboard: {
-      matchVisual: false 
-    }
+      matchVisual: false,
+    },
   };
 
   const formats = [
@@ -103,22 +132,21 @@ const AddData = () => {
     "image",
     "whitespace",
   ];
-  
+
   const formatDate = (date) => {
     if (!date) return "";
-    
+
     if (/^\d{2}-\d{2}-\d{4}$/.test(date)) {
       return date;
     }
-    
-    try {
 
+    try {
       const d = new Date(date);
       if (isNaN(d.getTime())) {
         console.error("Invalid date input:", date);
         return "";
       }
-      
+
       const day = String(d.getDate()).padStart(2, "0");
       const month = String(d.getMonth() + 1).padStart(2, "0");
       const year = d.getFullYear();
@@ -128,39 +156,45 @@ const AddData = () => {
       return "";
     }
   };
-  
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const loadingToast = showLoadingToast("Saving data...");
     setLoading(true);
-  
+
     try {
       const dataToSubmit = JSON.parse(JSON.stringify(formData));
       if (dataToSubmit.fiidii_activity) {
-        dataToSubmit.fiidii_activity = dataToSubmit.fiidii_activity.map((activity) => {
-          return {
-            ...activity,
-            currentDate: activity.currentDate ? formatDate(activity.currentDate) : ""
-          };
-        }).filter(activity => activity.currentDate); 
+        dataToSubmit.fiidii_activity = dataToSubmit.fiidii_activity
+          .map((activity) => {
+            return {
+              ...activity,
+              currentDate: activity.currentDate
+                ? formatDate(activity.currentDate)
+                : "",
+            };
+          })
+          .filter((activity) => activity.currentDate);
       }
-  
+
       if (dataToSubmit.upcoming_ipos) {
-        dataToSubmit.upcoming_ipos = dataToSubmit.upcoming_ipos.map((ipo) => {
-          return {
-            ...ipo,
-            dates: ipo.dates ? formatDate(ipo.dates) : ""
-          };
-        }).filter(ipo => ipo.dates);
+        dataToSubmit.upcoming_ipos = dataToSubmit.upcoming_ipos
+          .map((ipo) => {
+            return {
+              ...ipo,
+              dates: ipo.dates ? formatDate(ipo.dates) : "",
+            };
+          })
+          .filter((ipo) => ipo.dates);
       }
-  
-      console.log("Sanitized data to submit:", dataToSubmit);
-  
+
+      /*  console.log("Sanitized data to submit:", dataToSubmit); */
+
       const response = await axios.post(
         "https://stage.api.tradexpert.ai/api/v1/admin/whatsnew",
         dataToSubmit
       );
-  
+
       toast.dismiss(loadingToast);
       showSuccessToast("Data saved successfully!");
       setSubmitted(true);
@@ -170,9 +204,7 @@ const AddData = () => {
       toast.dismiss(loadingToast);
       console.error("Full submission error:", error);
       showErrorToast(
-        error.response?.data?.message || 
-        error.message || 
-        "Error saving data"
+        error.response?.data?.message || error.message || "Error saving data"
       );
     } finally {
       setLoading(false);
@@ -181,7 +213,7 @@ const AddData = () => {
 
   const handleChange = (e, arrayName, index, field) => {
     if (arrayName) {
-      const updatedArray = [...formData[arrayName]]
+      const updatedArray = [...formData[arrayName]];
       if (field.includes("[")) {
         const [baseField, indexStr] = field.split("[");
         const pivotIndex = parseInt(indexStr.replace("]", ""));
@@ -194,7 +226,6 @@ const AddData = () => {
         ...prev,
         [arrayName]: updatedArray,
       }));
-      
     } else {
       const { name, value } = e.target;
       setFormData((prev) => ({
@@ -382,6 +413,259 @@ const AddData = () => {
                 />
               </div>
             </div>
+          </motion.div>
+
+          {/* Trending Stocks */}
+          <motion.div
+            variants={itemVariants}
+            className="bg-slate-800 rounded-xl p-6 border border-slate-700"
+          >
+            <h2 className="text-xl font-semibold text-white">
+              Trending Stocks
+            </h2>
+            {/* Top Gainers */}
+            <div className="flex justify-between items-center mt-6 mb-6">
+              <h5 className="text-lg font-semibold text-white">Top Gainers</h5>
+              <button
+                type="button"
+                onClick={() =>
+                  addArrayItem("top_gainers", {
+                    stock_name: "",
+                    price: "",
+                    value: "",
+                  })
+                }
+                className="bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded-lg"
+              >
+                Add Row
+              </button>
+            </div>
+            {formData.top_gainers.map((item, index) => (
+              <div key={index} className="bg-slate-900 p-4 rounded-lg mb-4">
+                <div className="grid gap-4">
+                  <input
+                    type="text"
+                    placeholder="Stock Name"
+                    value={item.stock_name}
+                    onChange={(e) =>
+                      handleChange(e, "top_gainers", index, "stock_name")
+                    }
+                    className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Price"
+                    value={item.price}
+                    onChange={(e) =>
+                      handleChange(e, "top_gainers", index, "price")
+                    }
+                    className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Value"
+                    value={item.value}
+                    onChange={(e) =>
+                      handleChange(e, "top_gainers", index, "value")
+                    }
+                    className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeArrayItem("top_gainers", index)}
+                    className="text-red-400 hover:text-red-300"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            {/* Top Losers */}
+            <div className="flex justify-between items-center mt-6 mb-6">
+              <h5 className="text-lg font-semibold text-white">Top Losers</h5>
+              <button
+                type="button"
+                onClick={() =>
+                  addArrayItem("top_losers", {
+                    stock_name: "",
+                    price: "",
+                    value: "",
+                  })
+                }
+                className="bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded-lg"
+              >
+                Add Row
+              </button>
+            </div>
+            {formData.top_losers.map((item, index) => (
+              <div key={index} className="bg-slate-900 p-4 rounded-lg mb-4">
+                <div className="grid gap-4">
+                  <input
+                    type="text"
+                    placeholder="Stock Name"
+                    value={item.stock_name}
+                    onChange={(e) =>
+                      handleChange(e, "top_losers", index, "stock_name")
+                    }
+                    className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Price"
+                    value={item.price}
+                    onChange={(e) =>
+                      handleChange(e, "top_losers", index, "price")
+                    }
+                    className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Value"
+                    value={item.value}
+                    onChange={(e) =>
+                      handleChange(e, "top_losers", index, "value")
+                    }
+                    className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeArrayItem("top_losers", index)}
+                    className="text-red-400 hover:text-red-300"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            {/* Volume Gainers */}
+
+            <div className="flex justify-between items-center mt-6 mb-6">
+              <h5 className="text-lg font-semibold text-white">
+                Volume Gainers
+              </h5>
+              <button
+                type="button"
+                onClick={() =>
+                  addArrayItem("volume_gainers", {
+                    stock_name: "",
+                    price: "",
+                    value: "",
+                  })
+                }
+                className="bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded-lg"
+              >
+                Add Row
+              </button>
+            </div>
+            {formData.volume_gainers.map((item, index) => (
+              <div key={index} className="bg-slate-900 p-4 rounded-lg mb-4">
+                <div className="grid gap-4">
+                  <input
+                    type="text"
+                    placeholder="Stock Name"
+                    value={item.stock_name}
+                    onChange={(e) =>
+                      handleChange(e, "volume_gainers", index, "stock_name")
+                    }
+                    className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Price"
+                    value={item.price}
+                    onChange={(e) =>
+                      handleChange(e, "volume_gainers", index, "price")
+                    }
+                    className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Value"
+                    value={item.value}
+                    onChange={(e) =>
+                      handleChange(e, "volume_gainers", index, "value")
+                    }
+                    className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeArrayItem("volume_gainers", index)}
+                    className="text-red-400 hover:text-red-300"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            ))}
+          </motion.div>
+
+          {/* Sectoral Performance */}
+          <motion.div
+            variants={itemVariants}
+            className="bg-slate-800 rounded-xl p-6 border border-slate-700"
+          >
+            <div className="flex justify-between items-center mt-6 mb-6">
+            <h2 className="text-xl font-semibold text-white">
+              Sectoral Performance
+            </h2>
+              <button
+                type="button"
+                onClick={() =>
+                  addArrayItem("sectoral_performance", {
+                    price: "",
+                    value: "",
+                    title: "",
+                  })
+                }
+                className="bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded-lg"
+              >
+                Add Row
+              </button>
+            </div>
+            {formData.sectoral_performance.map((item, index) => (
+              <div key={index} className="bg-slate-900 p-4 rounded-lg mb-4">
+                <div className="grid gap-4">
+                  <input
+                    type="text"
+                    placeholder="Price"
+                    value={item.price}
+                    onChange={(e) =>
+                      handleChange(e, "sectoral_performance", index, "price")
+                    }
+                    className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Value"
+                    value={item.value}
+                    onChange={(e) =>
+                      handleChange(e, "sectoral_performance", index, "value")
+                    }
+                    className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Title"
+                    value={item.title}
+                    onChange={(e) =>
+                      handleChange(e, "sectoral_performance", index, "title")
+                    }
+                    className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      removeArrayItem("sectoral_performance", index)
+                    }
+                    className="text-red-400 hover:text-red-300"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            ))}
           </motion.div>
 
           {/* Market Bulletin */}
@@ -806,6 +1090,7 @@ const AddData = () => {
                   addArrayItem("earning_report", {
                     company_name: "",
                     description: "",
+                    tag: "",
                     price_range: "",
                   })
                 }
@@ -832,6 +1117,15 @@ const AddData = () => {
                     value={item.description}
                     onChange={(e) =>
                       handleChange(e, "earning_report", index, "description")
+                    }
+                    className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Tag"
+                    value={item.tag}
+                    onChange={(e) =>
+                      handleChange(e, "earning_report", index, "tag")
                     }
                     className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
                   />
