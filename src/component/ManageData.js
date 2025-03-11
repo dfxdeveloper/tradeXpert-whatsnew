@@ -203,7 +203,7 @@ const ManageData = () => {
       "top_losers",
       "volume_gainers",
       "sectoral_performance",
-      "market_outlook"
+      "market_outlook",
     ].forEach((field) => {
       if (
         !formData[field] ||
@@ -586,21 +586,27 @@ const ManageData = () => {
                         type="text"
                         placeholder="Bullish"
                         value={item.bullish}
-                        onChange={handleChange}
+                        onChange={(e) =>
+                          handleChange(e, "market_outlook", index, "bullish")
+                        }
                         className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
                       />
                       <input
                         type="text"
                         placeholder="Neutral"
                         value={item.neutral}
-                        onChange={handleChange}
+                        onChange={(e) =>
+                          handleChange(e, "market_outlook", index, "neutral")
+                        }
                         className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
                       />
                       <input
                         type="text"
                         placeholder="Bearish"
                         value={item.bearish}
-                        onChange={handleChange}
+                        onChange={(e) =>
+                          handleChange(e, "market_outlook", index, "bearish")
+                        }
                         className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
                       />
                     </div>
