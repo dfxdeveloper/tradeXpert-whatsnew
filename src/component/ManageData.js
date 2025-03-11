@@ -112,6 +112,13 @@ const ManageData = () => {
         title: "",
       },
     ],
+    market_outlook: [
+      {
+        bearish: "",
+        bullish: "",
+        neutral: "",
+      },
+    ],
   };
 
   const [editFormData, setEditFormData] = useState(initialEditFormData);
@@ -196,6 +203,7 @@ const ManageData = () => {
       "top_losers",
       "volume_gainers",
       "sectoral_performance",
+      "market_outlook"
     ].forEach((field) => {
       if (
         !formData[field] ||
@@ -561,6 +569,44 @@ const ManageData = () => {
             </div>
 
             <form onSubmit={handleUpdate} className="space-y-6">
+              {/*Market Sentiments*/}
+              <motion.div
+                variants={itemVariants}
+                className="bg-slate-800 rounded-xl p-6 border border-slate-700"
+              >
+                <div className="flex justify-between items-center mt-6 mb-6">
+                  <h5 className="text-lg font-semibold text-white">
+                    Market Outlook
+                  </h5>
+                </div>
+                {editFormData.market_outlook.map((item, index) => (
+                  <div key={index} className="bg-slate-900 p-4 rounded-lg mb-4">
+                    <div className="grid gap-4">
+                      <input
+                        type="text"
+                        placeholder="Bullish"
+                        value={item.bullish}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Neutral"
+                        value={item.neutral}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Value"
+                        value={item.bearish}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </motion.div>
               {/* Basic Information */}
               <div className="bg-slate-900 rounded-xl p-6 border border-slate-700">
                 <h3 className="text-lg font-semibold text-white mb-4">

@@ -94,6 +94,13 @@ const AddData = () => {
         title: "",
       },
     ],
+    market_outlook: [
+      {
+        bearish: "",
+        bullish: "",
+        neutral: "",
+      },
+    ],
   };
 
   const [formData, setFormData] = useState(initialFormData);
@@ -374,6 +381,50 @@ const AddData = () => {
               <Sparkles className="w-8 h-8 text-teal-500" />
             </h1>
           </motion.div>
+          {/*Market Sentiments*/}
+          <motion.div
+            variants={itemVariants}
+            className="bg-slate-800 rounded-xl p-6 border border-slate-700"
+          >
+            <div className="flex justify-between items-center mt-6 mb-6">
+              <h5 className="text-lg font-semibold text-white">
+                Market Outlook
+              </h5>
+            </div>
+            {formData.market_outlook.map((item, index) => (
+              <div key={index} className="bg-slate-900 p-4 rounded-lg mb-4">
+                <div className="grid gap-4">
+                  <input
+                    type="text"
+                    placeholder="Bullish"
+                    value={item.bullish}
+                    onChange={(e) =>
+                      handleChange(e, "market_outlook", index, "bullish")
+                    }
+                    className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Neutral"
+                    value={item.neutral}
+                    onChange={(e) =>
+                      handleChange(e, "market_outlook", index, "neutral")
+                    }
+                    className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Value"
+                    value={item.bearish}
+                    onChange={(e) =>
+                      handleChange(e, "market_outlook", index, "bearish")
+                    }
+                    className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
+                  />
+                </div>
+              </div>
+            ))}
+          </motion.div>
 
           {/* Basic Information */}
           <motion.div
@@ -607,9 +658,9 @@ const AddData = () => {
             className="bg-slate-800 rounded-xl p-6 border border-slate-700"
           >
             <div className="flex justify-between items-center mt-6 mb-6">
-            <h2 className="text-xl font-semibold text-white">
-              Sectoral Performance
-            </h2>
+              <h2 className="text-xl font-semibold text-white">
+                Sectoral Performance
+              </h2>
               <button
                 type="button"
                 onClick={() =>
