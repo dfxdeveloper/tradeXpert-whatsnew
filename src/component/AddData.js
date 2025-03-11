@@ -414,7 +414,7 @@ const AddData = () => {
                   />
                   <input
                     type="text"
-                    placeholder="Value"
+                    placeholder="Bearish"
                     value={item.bearish}
                     onChange={(e) =>
                       handleChange(e, "market_outlook", index, "bearish")

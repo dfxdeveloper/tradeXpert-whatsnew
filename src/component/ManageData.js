@@ -598,7 +598,7 @@ const ManageData = () => {
                       />
                       <input
                         type="text"
-                        placeholder="Value"
+                        placeholder="Bearish"
                         value={item.bearish}
                         onChange={handleChange}
                         className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
