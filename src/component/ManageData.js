@@ -685,21 +685,27 @@ const ManageData = () => {
                         type="text"
                         placeholder="Stock Name"
                         value={item.stock_name}
-                        onChange={handleChange}
+                        onChange={(e) =>
+                          handleChange(e, "top_gainers", index, "stock_name")
+                        }
                         className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
                       />
                       <input
                         type="text"
                         placeholder="Price"
                         value={item.price}
-                        onChange={handleChange}
+                        onChange={(e) =>
+                          handleChange(e, "top_gainers", index, "price")
+                        }
                         className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
                       />
                       <input
                         type="text"
                         placeholder="Value"
                         value={item.value}
-                        onChange={handleChange}
+                        onChange={(e) =>
+                          handleChange(e, "top_gainers", index, "value")
+                        }
                         className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
                       />
                       <button
@@ -739,21 +745,27 @@ const ManageData = () => {
                         type="text"
                         placeholder="Stock Name"
                         value={item.stock_name}
-                        onChange={handleChange}
+                        onChange={(e) =>
+                          handleChange(e, "top_losers", index, "stock_name")
+                        }
                         className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
                       />
                       <input
                         type="text"
                         placeholder="Price"
                         value={item.price}
-                        onChange={handleChange}
+                        onChange={(e) =>
+                          handleChange(e, "top_losers", index, "price")
+                        }
                         className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
                       />
                       <input
                         type="text"
                         placeholder="Value"
                         value={item.value}
-                        onChange={handleChange}
+                        onChange={(e) =>
+                          handleChange(e, "top_losers", index, "value")
+                        }
                         className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
                       />
                       <button
@@ -794,21 +806,27 @@ const ManageData = () => {
                         type="text"
                         placeholder="Stock Name"
                         value={item.stock_name}
-                        onChange={handleChange}
+                        onChange={(e) =>
+                          handleChange(e, "volume_gainers", index, "stock_name")
+                        }
                         className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
                       />
                       <input
                         type="text"
                         placeholder="Price"
                         value={item.price}
-                        onChange={handleChange}
+                        onChange={(e) =>
+                          handleChange(e, "volume_gainers", index, "price")
+                        }
                         className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
                       />
                       <input
                         type="text"
                         placeholder="Value"
                         value={item.value}
-                        onChange={handleChange}
+                        onChange={(e) =>
+                          handleChange(e, "volume_gainers", index, "value")
+                        }
                         className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
                       />
                       <button
@@ -853,21 +871,27 @@ const ManageData = () => {
                         type="text"
                         placeholder="Price"
                         value={item.price}
-                        onChange={handleChange}
+                        onChange={(e) =>
+                          handleChange(e, "sectoral_performance", index, "price")
+                        }
                         className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
                       />
                       <input
                         type="text"
                         placeholder="Value"
                         value={item.value}
-                        onChange={handleChange}
+                        onChange={(e) =>
+                          handleChange(e, "sectoral_performance", index, "value")
+                        }
                         className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
                       />
                       <input
                         type="text"
                         placeholder="Title"
                         value={item.title}
-                        onChange={handleChange}
+                        onChange={(e) =>
+                          handleChange(e, "sectoral_performance", index, "title")
+                        }
                         className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
                       />
                       <button
